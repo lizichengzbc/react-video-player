@@ -2,6 +2,10 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { BaseEngine } from '../../engines/base/BaseEngine';
 import { EngineFactory } from '../../engines/EngineFactory';
 import { ErrorOverlay } from './ErrorOverlay';
+import { VideoControls } from '../Controls/VideoControls';
+// 导入 Ant Design 组件
+import { Button, Progress, Tooltip } from 'antd';
+import { ReloadOutlined, CloseOutlined, WarningOutlined } from '@ant-design/icons';
 
 export interface VideoPlayerProps {
   src: string;
@@ -18,8 +22,24 @@ export interface VideoPlayerProps {
   onEnded?: () => void;
   onError?: (error: Error) => void;
   onTimeUpdate?: (currentTime: number) => void;
-  onRetry?: () => void; // 新增重试回调
+  onRetry?: () => void; // 重试回调
   showErrorOverlay?: boolean; // 是否显示错误覆盖层
+  maxRetries?: number; // 最大重试次数配置
+  // 自定义UI配置
+  customUI?: {
+    retryButton?: React.ReactNode;
+    dismissButton?: React.ReactNode;
+    progressBar?: React.ReactNode;
+    errorIcon?: React.ReactNode;
+    loadingIndicator?: React.ReactNode;
+    buttonPosition?: 'left' | 'center' | 'right';
+    theme?: 'light' | 'dark';
+    // 新增控件相关配置
+    playButton?: React.ReactNode;
+    pauseButton?: React.ReactNode;
+    volumeButton?: React.ReactNode;
+    fullscreenButton?: React.ReactNode;
+  };
 }
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
@@ -38,15 +58,25 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onError,
   onTimeUpdate,
   onRetry,
-  showErrorOverlay = true
+  showErrorOverlay = true,
+  maxRetries = 3, // 默认值为3，现在可以从外部配置
+  customUI
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<BaseEngine | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
-  const maxRetries = 3; // 最大重试次数
-
+  
+  // 新增播放器状态
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [volume, setVolume] = useState(muted ? 0 : 1);
+  const [isMuted, setIsMuted] = useState(muted);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  
   // 初始化引擎
   const initializeEngine = useCallback(async () => {
     if (!videoRef.current || !src) return;
@@ -69,17 +99,36 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         console.error('Video playback error:', error);
         setError(error.message);
         setIsLoading(false);
+        setIsPlaying(false);
         onError?.(error);
       });
 
       engine.on('play', () => {
         setError(null); // 播放成功时清除错误
+        setIsPlaying(true);
         onPlay?.();
       });
       
-      engine.on('pause', () => onPause?.());
-      engine.on('ended', () => onEnded?.());
-      engine.on('timeupdate', (time: number) => onTimeUpdate?.(time));
+      engine.on('pause', () => {
+        setIsPlaying(false);
+        onPause?.();
+      });
+      
+      engine.on('ended', () => {
+        setIsPlaying(false);
+        onEnded?.();
+      });
+      
+      engine.on('timeupdate', (time: number) => {
+        setCurrentTime(time);
+        onTimeUpdate?.(time);
+      });
+      
+      engine.on('loadedmetadata', () => {
+        if (videoRef.current) {
+          setDuration(videoRef.current.duration);
+        }
+      });
       
       engine.on('canplay', () => {
         setIsLoading(false);
@@ -103,6 +152,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       console.error('Engine initialization error:', error);
       setError((error as Error).message);
       setIsLoading(false);
+      setIsPlaying(false);
     }
   }, [src, autoplay, onPlay, onPause, onEnded, onError, onTimeUpdate]);
 
@@ -114,7 +164,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       onRetry?.(); // 调用外部重试回调
       initializeEngine();
     } else {
-      setError('重试次数已达上限，请稍后再试');
+      setError(`重试次数已达上限(${maxRetries}次)，请稍后再试`);
     }
   }, [retryCount, maxRetries, onRetry, initializeEngine]);
 
@@ -122,6 +172,77 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleDismissError = useCallback(() => {
     setError(null);
   }, []);
+
+  // 播放/暂停控制
+  const handlePlay = useCallback(() => {
+    if (engineRef.current && !isPlaying) {
+      engineRef.current.play().catch(error => {
+        console.error('Play failed:', error);
+      });
+    }
+  }, [isPlaying]);
+
+  const handlePause = useCallback(() => {
+    if (engineRef.current && isPlaying) {
+      engineRef.current.pause();
+    }
+  }, [isPlaying]);
+
+  // 跳转控制
+  const handleSeek = useCallback((time: number) => {
+    if (videoRef.current) {
+      videoRef.current.currentTime = time;
+    }
+  }, []);
+
+  // 音量控制
+  const handleVolumeChange = useCallback((newVolume: number) => {
+    if (engineRef.current) {
+      engineRef.current.setVolume(newVolume);
+      setVolume(newVolume);
+      setIsMuted(newVolume === 0);
+    }
+  }, []);
+
+  // 静音切换
+  const handleMuteToggle = useCallback(() => {
+    if (engineRef.current && videoRef.current) {
+      const newMuted = !isMuted;
+      videoRef.current.muted = newMuted;
+      setIsMuted(newMuted);
+    }
+  }, [isMuted]);
+
+  // 全屏控制
+  const handleFullscreenToggle = useCallback(() => {
+    if (!containerRef.current) return;
+    
+    if (!document.fullscreenElement) {
+      containerRef.current.requestFullscreen().then(() => {
+        setIsFullscreen(true);
+      }).catch(err => {
+        console.error('全屏模式错误:', err);
+      });
+    } else {
+      document.exitFullscreen().then(() => {
+        setIsFullscreen(false);
+      }).catch(err => {
+        console.error('退出全屏模式错误:', err);
+      });
+    }
+  }, []);
+
+  // 重新加载
+  const handleReload = useCallback(() => {
+    if (videoRef.current) {
+      const currentTime = videoRef.current.currentTime;
+      initializeEngine().then(() => {
+        if (videoRef.current) {
+          videoRef.current.currentTime = currentTime;
+        }
+      });
+    }
+  }, [initializeEngine]);
 
   useEffect(() => {
     initializeEngine();
@@ -139,12 +260,26 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setError(null);
   }, [src]);
 
+  // 监听全屏变化
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   const containerStyle: React.CSSProperties = {
     position: 'relative',
     width,
     height,
     backgroundColor: '#000',
-    overflow: 'hidden' // 防止内容溢出
+    overflow: 'hidden', // 防止内容溢出
+    borderRadius: '8px', // 添加圆角
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' // 添加阴影效果
   };
 
   const videoStyle: React.CSSProperties = {
@@ -162,41 +297,89 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     fontSize: '16px',
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '12px',
     zIndex: 999
+  };
+  
+  // 添加播放状态信息显示
+  const statusStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: '10px',
+    right: '10px',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    color: 'white',
+    padding: '4px 8px',
+    borderRadius: '4px',
+    fontSize: '12px',
+    zIndex: 998,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px'
   };
 
   return (
-    <div style={containerStyle} className={className}>
+    <div ref={containerRef} style={containerStyle} className={className}>
       <video
         ref={videoRef}
         poster={poster}
-        muted={muted}
+        muted={isMuted}
         loop={loop}
-        controls={controls && !error} // 有错误时隐藏控制条
+        controls={false} // 禁用原生控件，使用自定义控件
         style={videoStyle}
         playsInline
         webkit-playsinline="true"
       />
       
-      {/* 加载状态 */}
+      {/* 自定义控件 */}
+      {controls && !error && !isLoading && (
+        <VideoControls
+          isPlaying={isPlaying}
+          currentTime={currentTime}
+          duration={duration}
+          volume={volume}
+          muted={isMuted}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onSeek={handleSeek}
+          onVolumeChange={handleVolumeChange}
+          onMuteToggle={handleMuteToggle}
+          onFullscreenToggle={handleFullscreenToggle}
+          onReload={handleReload}
+          customUI={customUI}
+        />
+      )}
+      
+      {/* 加载状态 - 改进加载动画 */}
       {isLoading && !error && (
         <div style={loadingStyle}>
-          <div style={{
-            width: '20px',
-            height: '20px',
-            border: '2px solid #ffffff30',
-            borderTop: '2px solid #ffffff',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite'
-          }} />
-          <span>加载中...</span>
-          <style>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
+          {customUI?.loadingIndicator || (
+            <>
+              <div style={{
+                width: '24px',
+                height: '24px',
+                border: '3px solid rgba(255, 255, 255, 0.2)',
+                borderTop: '3px solid #ffffff',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+                boxShadow: '0 0 10px rgba(255, 255, 255, 0.3)'
+              }} />
+              <span>加载中...</span>
+              <style>{`
+                @keyframes spin {
+                  0% { transform: rotate(0deg); }
+                  100% { transform: rotate(360deg); }
+                }
+              `}</style>
+            </>
+          )}
+        </div>
+      )}
+      
+      {/* 重试状态信息 */}
+      {retryCount > 0 && !error && (
+        <div style={statusStyle}>
+          <span>🔄</span>
+          <span>已重试 {retryCount}/{maxRetries} 次</span>
         </div>
       )}
       
@@ -206,6 +389,9 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           error={error}
           onRetry={handleRetry}
           onDismiss={handleDismissError}
+          retryCount={retryCount}
+          maxRetries={maxRetries}
+          customUI={customUI}
         />
       )}
       
@@ -218,12 +404,29 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           right: '10px',
           backgroundColor: 'rgba(255, 68, 68, 0.9)',
           color: 'white',
-          padding: '8px 12px',
-          borderRadius: '4px',
+          padding: '10px 16px',
+          borderRadius: '8px',
           fontSize: '14px',
-          zIndex: 999
+          zIndex: 999,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          boxShadow: '0 2px 8px rgba(255, 0, 0, 0.3)'
         }}>
-          {error}
+          {customUI?.errorIcon || <WarningOutlined style={{ fontSize: '18px' }} />}
+          <span>{error}</span>
+          <Button 
+            type="text"
+            icon={<ReloadOutlined />}
+            onClick={handleRetry}
+            style={{
+              marginLeft: 'auto',
+              color: 'white',
+            }}
+            disabled={retryCount >= maxRetries}
+          >
+            重试 ({retryCount}/{maxRetries})
+          </Button>
         </div>
       )}
     </div>

@@ -1,17 +1,35 @@
 import React from 'react';
+import { Button, Progress, Space, Typography } from 'antd';
+import { ReloadOutlined, CloseOutlined, WarningOutlined } from '@ant-design/icons';
+
+const { Title, Text, Paragraph } = Typography;
 
 export interface ErrorOverlayProps {
   error: string;
   onRetry: () => void;
   onDismiss?: () => void;
   className?: string;
+  retryCount?: number;
+  maxRetries?: number;
+  // 新增：自定义UI配置
+  customUI?: {
+    retryButton?: React.ReactNode;
+    dismissButton?: React.ReactNode;
+    progressBar?: React.ReactNode;
+    errorIcon?: React.ReactNode;
+    buttonPosition?: 'left' | 'center' | 'right';
+    theme?: 'light' | 'dark';
+  };
 }
 
 export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({
   error,
   onRetry,
   onDismiss,
-  className
+  className,
+  retryCount = 0,
+  maxRetries = 3,
+  customUI
 }) => {
   const overlayStyle: React.CSSProperties = {
     position: 'absolute',
@@ -19,7 +37,8 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    backdropFilter: 'blur(4px)', // 添加模糊效果
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -32,26 +51,31 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({
 
   const contentStyle: React.CSSProperties = {
     textAlign: 'center',
-    maxWidth: '400px',
-    width: '100%'
+    maxWidth: '450px',
+    width: '100%',
+    backgroundColor: 'rgba(30, 30, 30, 0.8)',
+    borderRadius: '12px',
+    padding: '24px',
+    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)'
   };
 
   const iconStyle: React.CSSProperties = {
-    fontSize: '48px',
-    marginBottom: '16px',
-    color: '#ff4444'
+    fontSize: '52px',
+    marginBottom: '20px',
+    color: '#ff4444',
+    textShadow: '0 0 10px rgba(255, 68, 68, 0.5)'
   };
 
   const titleStyle: React.CSSProperties = {
-    fontSize: '18px',
+    fontSize: '20px',
     fontWeight: 'bold',
-    marginBottom: '12px',
+    marginBottom: '16px',
     color: '#ffffff'
   };
 
   const messageStyle: React.CSSProperties = {
-    fontSize: '14px',
-    lineHeight: '1.5',
+    fontSize: '15px',
+    lineHeight: '1.6',
     marginBottom: '24px',
     color: '#cccccc',
     wordBreak: 'break-word'
@@ -59,50 +83,59 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({
 
   const buttonContainerStyle: React.CSSProperties = {
     display: 'flex',
-    gap: '12px',
+    gap: '16px',
     justifyContent: 'center',
     flexWrap: 'wrap'
   };
 
   const buttonStyle: React.CSSProperties = {
-    padding: '10px 20px',
+    padding: '12px 24px',
     border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
+    borderRadius: '8px',
+    fontSize: '15px',
     fontWeight: '500',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
-    minWidth: '100px'
+    minWidth: '120px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '8px'
   };
 
   const retryButtonStyle: React.CSSProperties = {
     ...buttonStyle,
-    backgroundColor: '#007bff',
-    color: 'white'
+    backgroundColor: '#2563eb', // 更现代的蓝色
+    color: 'white',
+    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
   };
 
   const dismissButtonStyle: React.CSSProperties = {
     ...buttonStyle,
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     color: '#cccccc',
-    border: '1px solid #666'
+    border: '1px solid rgba(255, 255, 255, 0.2)'
   };
 
   // 处理按钮悬停效果
   const handleRetryMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.backgroundColor = '#0056b3';
+    e.currentTarget.style.backgroundColor = '#1d4ed8';
+    e.currentTarget.style.transform = 'translateY(-2px)';
   };
 
   const handleRetryMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.backgroundColor = '#007bff';
+    e.currentTarget.style.backgroundColor = '#2563eb';
+    e.currentTarget.style.transform = 'translateY(0)';
   };
 
   const handleDismissMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
+    e.currentTarget.style.transform = 'translateY(-2px)';
   };
 
   const handleDismissMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.backgroundColor = 'transparent';
+    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
+    e.currentTarget.style.transform = 'translateY(0)';
   };
 
   // 获取错误类型和友好提示
@@ -150,43 +183,94 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({
     };
   };
 
+  // 计算重试进度
+  const retryProgress = (retryCount / maxRetries) * 100;
   const errorInfo = getErrorInfo(error);
+  
+  // 根据自定义配置确定按钮位置的样式
+  const getButtonContainerStyle = (): React.CSSProperties => {
+    const baseStyle: React.CSSProperties = {
+      display: 'flex',
+      gap: '16px',
+      flexWrap: 'wrap',
+    };
+    
+    switch (customUI?.buttonPosition) {
+      case 'left':
+        return { ...baseStyle, justifyContent: 'flex-start' };
+      case 'right':
+        return { ...baseStyle, justifyContent: 'flex-end' };
+      case 'center':
+      default:
+        return { ...baseStyle, justifyContent: 'center' };
+    }
+  };
 
   return (
     <div style={overlayStyle} className={className}>
       <div style={contentStyle}>
         {/* 错误图标 */}
-        <div style={iconStyle}>⚠️</div>
+        <div style={iconStyle}>
+          {customUI?.errorIcon || <WarningOutlined style={{ fontSize: '52px', color: '#ff4444' }} />}
+        </div>
         
         {/* 错误标题 */}
-        <div style={titleStyle}>{errorInfo.title}</div>
+        <Title level={4} style={{ color: '#ffffff', marginBottom: '16px' }}>
+          {errorInfo.title}
+        </Title>
         
         {/* 错误消息 */}
-        <div style={messageStyle}>{errorInfo.message}</div>
+        <Paragraph style={{ color: '#cccccc', marginBottom: '24px' }}>
+          {errorInfo.message}
+        </Paragraph>
+        
+        {/* 重试进度条 */}
+        {retryCount > 0 && (
+          <div style={{ marginBottom: '20px', width: '100%' }}>
+            {customUI?.progressBar || (
+              <Progress 
+                percent={retryProgress} 
+                status={retryCount >= maxRetries ? 'exception' : 'active'}
+                showInfo={false}
+                strokeColor={retryCount >= maxRetries ? '#ff4444' : '#2563eb'}
+                trailColor="rgba(255, 255, 255, 0.1)"
+              />
+            )}
+          </div>
+        )}
+        
+        {/* 重试计数 */}
+        {retryCount > 0 && (
+          <Text style={{ color: '#999', marginBottom: '20px', display: 'block' }}>
+            已重试 {retryCount}/{maxRetries} 次
+            {retryCount >= maxRetries && ' (已达上限)'}
+          </Text>
+        )}
         
         {/* 操作按钮 */}
-        <div style={buttonContainerStyle}>
-          <button
-            style={retryButtonStyle}
-            onClick={onRetry}
-            onMouseEnter={handleRetryMouseEnter}
-            onMouseLeave={handleRetryMouseLeave}
-            aria-label="重新加载视频"
-          >
-            🔄 重新加载
-          </button>
+        <div style={getButtonContainerStyle()}>
+          {customUI?.retryButton || (
+            <Button 
+              type="primary" 
+              icon={<ReloadOutlined />}
+              onClick={onRetry}
+              disabled={retryCount >= maxRetries}
+              size="large"
+            >
+              重新加载
+            </Button>
+          )}
           
-          {onDismiss && (
-            <button
-              style={dismissButtonStyle}
+          {onDismiss && (customUI?.dismissButton || (
+            <Button 
+              icon={<CloseOutlined />}
               onClick={onDismiss}
-              onMouseEnter={handleDismissMouseEnter}
-              onMouseLeave={handleDismissMouseLeave}
-              aria-label="关闭错误提示"
+              size="large"
+              ghost
             >
               关闭
-            </button>
-          )}
+            </Button>
+          ))}
         </div>
       </div>
     </div>

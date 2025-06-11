@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { VideoPlayer } from './components/VideoPlayer/VideoPlayer';
+import { Button, Select, Space, Typography, Card, Divider } from 'antd';
+import { PlayCircleFilled, PauseCircleFilled } from '@ant-design/icons';
 import './App.css';
+
+const { Title, Paragraph } = Typography;
+const { Option } = Select;
 
 const App: React.FC = () => {
   const [currentSrc, setCurrentSrc] = useState<string>('');
@@ -25,96 +30,77 @@ const App: React.FC = () => {
     }
   ];
 
-  const handleSourceChange = (url: string) => {
-    setCurrentSrc(url);
-    setErrorCount(0);
-  };
-
   const handleError = (error: Error) => {
     console.error('视频播放错误:', error);
     setErrorCount(prev => prev + 1);
   };
 
-  const handleRetry = () => {
-    console.log('用户触发重试');
-  };
-
   return (
-    <div className="app">
-      <header className="app-header">
-        <h1>React 视频播放器组件</h1>
-        <p>支持 HLS、DASH 和原生视频格式的跨平台播放器</p>
-      </header>
-
-      <main className="app-main">
-        {/* 视频源选择 */}
-        <section className="source-selector">
-          <h2>选择测试视频源</h2>
-          <div className="source-buttons">
+    <div className="app-container">
+      <Card className="header-card">
+        <Title level={2}>React 视频播放器演示</Title>
+        <Paragraph>
+          选择一个视频源进行测试：
+        </Paragraph>
+        <Space>
+          <Select 
+            placeholder="选择视频源" 
+            style={{ width: 200 }}
+            onChange={(value) => setCurrentSrc(value)}
+          >
             {testSources.map((source, index) => (
-              <button
-                key={index}
-                onClick={() => handleSourceChange(source.url)}
-                className={currentSrc === source.url ? 'active' : ''}
-              >
-                {source.name}
-              </button>
+              <Option key={index} value={source.url}>{source.name}</Option>
             ))}
-          </div>
-        </section>
+          </Select>
+          <Button type="primary" onClick={() => setCurrentSrc('')}>
+            清除
+          </Button>
+        </Space>
+      </Card>
 
-        {/* 视频播放器 */}
-        <section className="video-section">
-          {currentSrc ? (
-            <div className="video-container">
-              <VideoPlayer
-                src={currentSrc}
-                width="100%"
-                height={450}
-                controls
-                onError={handleError}
-                onRetry={handleRetry}
-                showErrorOverlay={true}
-                onPlay={() => console.log('播放开始')}
-                onPause={() => console.log('播放暂停')}
-                onTimeUpdate={(time) => console.log('时间更新:', time)}
-              />
-              
-              <div className="video-info">
-                <p><strong>当前视频源:</strong> {currentSrc}</p>
-                <p><strong>错误次数:</strong> {errorCount}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="placeholder">
-              <p>请选择一个视频源开始测试</p>
-            </div>
-          )}
-        </section>
+      <Divider>标准播放器</Divider>
+      
+      <Card className="player-card">
+        <VideoPlayer
+          src={currentSrc}
+          width="60%"
+          controls
+          onError={handleError}
+          onRetry={() => console.log('重试中...')}
+          showErrorOverlay={true}
+          maxRetries={5}
+        />
+      </Card>
 
-        {/* 功能说明 */}
-        <section className="features">
-          <h2>组件特性</h2>
-          <div className="feature-grid">
-            <div className="feature-item">
-              <h3>🎥 多格式支持</h3>
-              <p>支持 HLS (.m3u8)、DASH (.mpd) 和原生格式 (.mp4, .webm)</p>
-            </div>
-            <div className="feature-item">
-              <h3>🔄 智能重试</h3>
-              <p>自动错误检测和重试机制，提升播放成功率</p>
-            </div>
-            <div className="feature-item">
-              <h3>📱 跨平台兼容</h3>
-              <p>支持桌面和移动端浏览器，自动选择最佳播放引擎</p>
-            </div>
-            <div className="feature-item">
-              <h3>⚡ 性能优化</h3>
-              <p>事件驱动架构，避免轮询，内存泄漏防护</p>
-            </div>
-          </div>
-        </section>
-      </main>
+      <Divider>自定义UI播放器</Divider>
+      
+      <Card className="player-card">
+        <VideoPlayer
+          src={currentSrc}
+          width="60%"
+          controls
+          onError={handleError}
+          onRetry={() => console.log('重试中...')}
+          showErrorOverlay={true}
+          maxRetries={5}
+          customUI={{
+            theme: 'dark',
+            playButton: <Button type="text" icon={<PlayCircleFilled style={{ color: '#1890ff', fontSize: '28px' }} />} />,
+            pauseButton: <Button type="text" icon={<PauseCircleFilled style={{ color: '#1890ff', fontSize: '28px' }} />} />
+          }}
+        />
+      </Card>
+
+      <Card className="feature-card">
+        <Title level={3}>特性</Title>
+        <ul>
+          <li>支持多种视频格式 (MP4, HLS, DASH)</li>
+          <li>智能重试机制</li>
+          <li>自定义控件和UI</li>
+          <li>跨平台兼容</li>
+          <li>性能优化</li>
+        </ul>
+      </Card>
     </div>
   );
 };
