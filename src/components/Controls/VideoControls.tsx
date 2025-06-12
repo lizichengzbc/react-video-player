@@ -176,7 +176,7 @@ export const VideoControls: React.FC<VideoControlsProps> = ({
                   onSeek(value);
                 }}
                 onAfterChange={() => setIsDragging(false)}
-                onBeforeChange={() => setIsDragging(true)}
+                onChangeComplete={() => setIsDragging(false)}
                 tooltip={{ formatter: (value) => formatTime(value || 0) }}
                 styles={{ 
                   track: { backgroundColor: colors.slider },

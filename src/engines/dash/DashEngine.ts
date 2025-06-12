@@ -15,7 +15,7 @@ export class DashEngine extends BaseEngine {
       // 动态导入 dashjs
       if (!this.dashjs) {
         const dashModule = await import('dashjs');
-        this.dashjs = dashModule.default || dashModule;
+        this.dashjs = (dashModule as any).default || dashModule;
       }
 
       if (!this.dashjs) {
@@ -28,7 +28,7 @@ export class DashEngine extends BaseEngine {
       
       this.player.initialize(this.videoElement, src, false);
       
-      this.player.on(this.dashjs.MediaPlayer.events.ERROR, (e) => {
+      this.player.on(this.dashjs.MediaPlayer.events.ERROR, (e: any) => {
         this.emit('error', new Error(`DASH Error: ${e.error}`));
       });
 

@@ -1,18 +1,37 @@
 {
-  "name": "react-video-player",
+  "name": "@lzc-org/react-video-player",
   "version": "1.0.0",
-  "description": "跨平台React视频播放器组件",
-  "main": "dist/index.js",
+  "description": "功能强大的React视频播放器组件库，支持HLS、DASH、YouTube、Vimeo等多种视频源",
+  "main": "dist/react-video-player.umd.js",
+  "module": "dist/react-video-player.es.js",
+  "types": "dist/index.d.ts",
   "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "import": "./dist/react-video-player.es.js",
+      "require": "./dist/react-video-player.umd.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "sideEffects": false,
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "npm run build:lib",
+    "build:lib": "vite build --config vite.lib.config.ts",
+    "build:demo": "vite build",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint src --ext ts,tsx --fix",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run lint && npm run type-check && npm run test && npm run build",
+    "publish:npm": "npm publish --access public"
   },
   "keywords": [
     "react",
@@ -20,10 +39,24 @@
     "player",
     "hls",
     "dash",
-    "typescript"
+    "youtube",
+    "vimeo",
+    "webrtc",
+    "typescript",
+    "component",
+    "streaming",
+    "media"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "lizicheng<2471569585@qq.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/lizicheng/react-video-player#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lizicheng/react-video-player.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lizicheng/react-video-player/issues"
+  },
   "packageManager": "pnpm@9.14.2+sha512.6e2baf77d06b9362294152c851c4f278ede37ab1eba3a55fda317a4a17b209f4dbb973fb250a77abc463a341fcb1f17f17cfa24091c4eb319cda0d9b84278387",
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
@@ -39,15 +72,21 @@
     "@rollup/plugin-typescript": "^12.1.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.5.2",
     "@types/hls.js": "^1.0.0",
     "@types/node": "^24.0.0",
     "@types/react": "^19.1.7",
     "@types/react-dom": "^19.1.6",
+    "@eslint/js": "^9.28.0",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
-    "@vitejs/plugin-react": "^4.5.2",
+    "@vitejs/plugin-react": "^4.3.4",
     "dashjs": "^5.0.3",
     "eslint": "^9.28.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.0.0",
+    "vite-plugin-dts": "^4.3.0",
     "hls.js": "^1.6.5",
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
@@ -58,6 +97,7 @@
     "tslib": "^2.8.1",
     "typescript": "^5.8.3",
     "vite": "^5.4.19",
-    "vitest": "^3.2.3"
+    "vitest": "^3.2.3",
+    "@vitest/coverage-v8": "^2.1.8"
   }
 }

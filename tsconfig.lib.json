@@ -1,0 +1,28 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "declaration": true,
+    "declarationMap": true,
+    "emitDeclarationOnly": false,
+    "noEmit": false,
+    "isolatedModules": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "src/main.tsx",
+    "src/App.tsx",
+    "src/App.css",
+    "src/index.css",
+    "src/**/*.test.*",
+    "src/**/*.spec.*",
+    "examples/**/*",
+    "stories/**/*",
+    "__tests__/**/*",
+    "node_modules",
+    "dist"
+  ]
+}

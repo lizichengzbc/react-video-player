@@ -318,7 +318,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   return (
-    <div ref={containerRef} style={containerStyle} className={className}>
+    <div ref={containerRef} style={containerStyle} className={className} role="application">
       <video
         ref={videoRef}
         poster={poster}

@@ -9,7 +9,7 @@ const { Option } = Select;
 
 const App: React.FC = () => {
   const [currentSrc, setCurrentSrc] = useState<string>('');
-  const [errorCount, setErrorCount] = useState(0);
+  const [, setErrorCount] = useState(0);
 
   // 测试视频源
   const testSources = [
