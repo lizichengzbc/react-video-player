@@ -29,7 +29,8 @@
     "@ant-design/icons": "^6.0.0",
     "antd": "^5.26.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "@vimeo/player": "^2.20.1"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^28.0.3",
