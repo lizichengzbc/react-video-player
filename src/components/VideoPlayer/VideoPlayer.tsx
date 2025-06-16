@@ -3,6 +3,13 @@ import { BaseEngine } from '../../engines/base/BaseEngine';
 import { EngineFactory } from '../../engines/EngineFactory';
 import { ErrorOverlay } from './ErrorOverlay';
 import { VideoControls } from '../Controls/VideoControls';
+import { 
+  SocialActions, 
+  SocialActionsCallbacks, 
+  SocialActionsState, 
+  SocialActionsConfig, 
+  SocialActionsCustomUI 
+} from '../Controls/SocialActions';
 // 导入 Ant Design 组件
 import { Button, Progress, Tooltip } from 'antd';
 import { ReloadOutlined, CloseOutlined, WarningOutlined } from '@ant-design/icons';
@@ -25,6 +32,16 @@ export interface VideoPlayerProps {
   onRetry?: () => void; // 重试回调
   showErrorOverlay?: boolean; // 是否显示错误覆盖层
   maxRetries?: number; // 最大重试次数配置
+  
+  // 社交功能配置
+  socialActions?: {
+    show?: boolean; // 是否显示社交功能
+    state?: SocialActionsState; // 社交功能状态
+    callbacks?: SocialActionsCallbacks; // 社交功能回调
+    config?: SocialActionsConfig; // 社交功能配置
+    customUI?: SocialActionsCustomUI; // 自定义UI
+  };
+  
   // 自定义UI配置
   customUI?: {
     retryButton?: React.ReactNode;
@@ -60,6 +77,7 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onRetry,
   showErrorOverlay = true,
   maxRetries = 3, // 默认值为3，现在可以从外部配置
+  socialActions,
   customUI
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -346,6 +364,16 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onFullscreenToggle={handleFullscreenToggle}
           onReload={handleReload}
           customUI={customUI}
+        />
+      )}
+      
+      {/* 社交功能组件 */}
+      {socialActions?.show && !error && !isLoading && (
+        <SocialActions
+          state={socialActions.state}
+          callbacks={socialActions.callbacks}
+          config={socialActions.config}
+          customUI={socialActions.customUI}
         />
       )}
       

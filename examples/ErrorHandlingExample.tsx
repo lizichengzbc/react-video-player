@@ -17,7 +17,7 @@ const ErrorHandlingExample: React.FC = () => {
   };
 
   const switchToBackupSource = () => {
-    setCurrentSrc('https://backup.example.com/video.mp4');
+    setCurrentSrc('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4');
   };
 
   return (

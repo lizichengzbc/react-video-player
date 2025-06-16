@@ -1,12 +1,12 @@
 import React from 'react';
 import { VideoPlayer } from '../src/components/VideoPlayer/VideoPlayer';
 
-const App: React.FC = () => {
+const BasicUsage: React.FC = () => {
   return (
     <div>
       {/* HLS视频 */}
       <VideoPlayer
-        src="https://example.com/video.m3u8"
+        src="https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8"
         width={800}
         height={450}
         controls
@@ -15,7 +15,7 @@ const App: React.FC = () => {
       
       {/* DASH视频 */}
       <VideoPlayer
-        src="https://example.com/video.mpd"
+        src="https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd"
         width={800}
         height={450}
         controls
@@ -23,7 +23,7 @@ const App: React.FC = () => {
       
       {/* 普通MP4视频 */}
       <VideoPlayer
-        src="https://cdn.pixabay.com/video/2024/03/10/203678-922748476_large.mp4"
+        src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
         width={800}
         height={450}
         controls
@@ -32,4 +32,4 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
+export default BasicUsage;

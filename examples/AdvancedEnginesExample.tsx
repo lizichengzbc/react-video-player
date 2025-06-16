@@ -11,12 +11,12 @@ const { Option } = Select;
 const AdvancedEnginesExample: React.FC = () => {
   // 视频源列表
   const videoSources = {
-    mp4: 'https://storage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+    mp4: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
     hls: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
     dash: 'https://dash.akamaized.net/akamai/bbb_30fps/bbb_30fps.mpd',
     youtube: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',  // Big Buck Bunny on YouTube
     vimeo: 'https://vimeo.com/1084537',                     // Big Buck Bunny on Vimeo
-    webrtc: 'webrtc:wss://example.com/webrtc-signalling'    // 示例WebRTC URL（需要替换为实际可用的信令服务器）
+    webrtc: 'wss://echo.websocket.org'                     // 公开的WebSocket测试服务器
   };
 
   // 当前选择的视频源
@@ -76,10 +76,7 @@ const AdvancedEnginesExample: React.FC = () => {
               showErrorOverlay={true}
               maxRetries={3}
               customUI={{
-                theme: {
-                  primaryColor: '#1890ff',
-                  secondaryColor: '#f5222d'
-                },
+                theme:'light',
                 buttonPosition: 'center'
               }}
             />

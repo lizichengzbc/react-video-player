@@ -10,16 +10,6 @@ export type { VideoControlsProps } from './components/Controls/VideoControls';
 export { ErrorOverlay } from './components/VideoPlayer/ErrorOverlay';
 export type { ErrorOverlayProps } from './components/VideoPlayer/ErrorOverlay';
 
-// 引擎相关导出
-export { BaseEngine } from './engines/base/BaseEngine';
-export { EngineFactory } from './engines/EngineFactory';
-export { HlsEngine } from './engines/hls/HlsEngine';
-export { DashEngine } from './engines/dash/DashEngine';
-export { NativeEngine } from './engines/native/NativeEngine';
-export { YouTubeEngine } from './engines/youtube/YouTubeEngine';
-export { VimeoEngine } from './engines/vimeo/VimeoEngine';
-export { WebRTCEngine } from './engines/webrtc/WebRTCEngine';
-
 // 类型定义导出
 export type {
   VideoSource,
