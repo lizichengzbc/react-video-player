@@ -1,3 +1,4 @@
+/* PostCSS将自动转换px为rem单位 */
 .app {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -6,13 +7,13 @@
 
 .app-header {
   text-align: center;
-  padding: 2rem 1rem;
+  padding: 2rem 1rem; /* 32px 16px -> 2rem 1rem */
   background: rgba(0, 0, 0, 0.1);
 }
 
 .app-header h1 {
-  margin: 0 0 0.5rem 0;
-  font-size: 2.5rem;
+  margin: 0 0 0.5rem 0; /* 8px -> 0.5rem */
+  font-size: 2.5rem; /* 40px -> 2.5rem */
   font-weight: 700;
 }
 

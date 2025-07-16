@@ -47,25 +47,26 @@
     "streaming",
     "media"
   ],
-  "author": "lizicheng<2471569585@qq.com>",
+  "author": "lizichengzbc <2471569585@qq.com>",
   "license": "MIT",
-  "homepage": "https://github.com/lizicheng/react-video-player#readme",
+  "homepage": "https://github.com/lizichengzbc/react-video-player#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lizicheng/react-video-player.git"
+    "url": "git+https://github.com/lizichengzbc/react-video-player.git"
   },
   "bugs": {
-    "url": "https://github.com/lizicheng/react-video-player/issues"
+    "url": "https://github.com/lizichengzbc/react-video-player/issues"
   },
   "packageManager": "pnpm@9.14.2+sha512.6e2baf77d06b9362294152c851c4f278ede37ab1eba3a55fda317a4a17b209f4dbb973fb250a77abc463a341fcb1f17f17cfa24091c4eb319cda0d9b84278387",
   "dependencies": {
     "@ant-design/icons": "^6.0.0",
+    "@vimeo/player": "^2.20.1",
     "antd": "^5.26.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0",
-    "@vimeo/player": "^2.20.1"
+    "react-dom": "^19.1.0"
   },
   "devDependencies": {
+    "@eslint/js": "^9.28.0",
     "@rollup/plugin-commonjs": "^28.0.3",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-terser": "^0.4.4",
@@ -77,27 +78,29 @@
     "@types/node": "^24.0.0",
     "@types/react": "^19.1.7",
     "@types/react-dom": "^19.1.6",
-    "@eslint/js": "^9.28.0",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^2.1.8",
+    "autoprefixer": "^10.4.21",
     "dashjs": "^5.0.3",
     "eslint": "^9.28.0",
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.16",
     "globals": "^15.0.0",
-    "vite-plugin-dts": "^4.3.0",
     "hls.js": "^1.6.5",
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",
     "lint-staged": "^16.1.0",
+    "postcss": "^8.5.6",
+    "postcss-pxtorem": "^6.1.0",
     "prettier": "^3.5.3",
     "rollup": "^4.42.0",
     "rollup-plugin-dts": "^6.2.1",
     "tslib": "^2.8.1",
     "typescript": "^5.8.3",
     "vite": "^5.4.19",
-    "vitest": "^3.2.3",
-    "@vitest/coverage-v8": "^2.1.8"
+    "vite-plugin-dts": "^4.3.0",
+    "vitest": "^3.2.3"
   }
 }

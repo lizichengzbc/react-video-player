@@ -1,0 +1,101 @@
+/* PostCSS px转rem演示样式文件 */
+/* 这些px值将被自动转换为rem单位 */
+
+.postcss-demo {
+  /* 16px -> 1rem (基于rootValue: 16) */
+  font-size: 16px;
+  
+  /* 24px -> 1.5rem */
+  padding: 24px;
+  
+  /* 32px -> 2rem */
+  margin: 32px;
+  
+  /* 48px -> 3rem */
+  width: 480px;
+  
+  /* 64px -> 4rem */
+  height: 640px;
+  
+  /* 边框和圆角 */
+  border: 2px solid #ccc; /* 2px -> 0.125rem */
+  border-radius: 8px; /* 8px -> 0.5rem */
+  
+  /* 阴影效果 */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 4px, 8px -> 0.25rem, 0.5rem */
+}
+
+.postcss-demo__title {
+  /* 大标题字体 */
+  font-size: 32px; /* 32px -> 2rem */
+  line-height: 40px; /* 40px -> 2.5rem */
+  margin-bottom: 16px; /* 16px -> 1rem */
+}
+
+.postcss-demo__content {
+  /* 内容区域 */
+  padding: 20px 16px; /* 20px, 16px -> 1.25rem, 1rem */
+  margin: 12px 0; /* 12px -> 0.75rem */
+}
+
+.postcss-demo__button {
+  /* 按钮样式 */
+  padding: 12px 24px; /* 12px, 24px -> 0.75rem, 1.5rem */
+  font-size: 14px; /* 14px -> 0.875rem */
+  border-radius: 6px; /* 6px -> 0.375rem */
+  margin: 8px; /* 8px -> 0.5rem */
+}
+
+/* 不转换的样式示例 */
+.no-rem {
+  /* 使用.no-rem类名的元素不会转换px */
+  font-size: 16px; /* 保持16px不变 */
+  padding: 10px; /* 保持10px不变 */
+}
+
+/* 小于minPixelValue的值不会转换 */
+.small-values {
+  border: 1px solid #ccc; /* 1px保持不变，因为小于minPixelValue(2) */
+  outline: 1px dotted #999; /* 1px保持不变 */
+}
+
+/* 响应式设计示例 */
+@media (max-width: 768px) {
+  .postcss-demo {
+    /* 移动端适配 */
+    padding: 16px; /* 16px -> 1rem */
+    margin: 8px; /* 8px -> 0.5rem */
+    width: 100%; /* 百分比不受影响 */
+  }
+  
+  .postcss-demo__title {
+    font-size: 24px; /* 24px -> 1.5rem */
+    line-height: 32px; /* 32px -> 2rem */
+  }
+}
+
+/* Flexbox和Grid布局示例 */
+.postcss-demo__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); /* 200px -> 12.5rem */
+  gap: 16px; /* 16px -> 1rem */
+  padding: 24px; /* 24px -> 1.5rem */
+}
+
+.postcss-demo__flex {
+  display: flex;
+  gap: 12px; /* 12px -> 0.75rem */
+  padding: 18px; /* 18px -> 1.125rem */
+  align-items: center;
+}
+
+/* 动画和过渡效果 */
+.postcss-demo__animated {
+  transition: all 0.3s ease;
+  transform: translateY(0);
+}
+
+.postcss-demo__animated:hover {
+  transform: translateY(-4px); /* -4px -> -0.25rem */
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15); /* 8px, 16px -> 0.5rem, 1rem */
+}
