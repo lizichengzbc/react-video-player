@@ -5,7 +5,6 @@ import {
   PauseCircleOutlined,
   SoundOutlined,
   FullscreenOutlined,
-  SettingOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
 

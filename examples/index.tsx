@@ -5,6 +5,7 @@ import AdvancedEnginesExample from './AdvancedEnginesExample';
 import CustomExtensionExample from './CustomExtensionExample';
 import EnhancedDetectionExample from './EnhancedDetectionExample';
 import LoadTestingIssuesDemo from './LoadTestingIssuesDemo';
+import QuickStartExample from './QuickStartExample';
 
 
 export {
@@ -14,5 +15,6 @@ export {
     AdvancedEnginesExample,
     CustomExtensionExample,
     EnhancedDetectionExample,
-    LoadTestingIssuesDemo
+    LoadTestingIssuesDemo,
+    QuickStartExample
 }

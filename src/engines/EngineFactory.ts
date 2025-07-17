@@ -5,7 +5,6 @@ import { NativeEngine } from './native/NativeEngine';
 import { YouTubeEngine } from './youtube/YouTubeEngine';
 import { VimeoEngine } from './vimeo/VimeoEngine';
 import { WebRTCEngine } from './webrtc/WebRTCEngine';
-import { MimeTypeDetector } from '../utils/MimeTypeDetector';
 import { engineDetectionCache } from '../utils/EngineDetectionCache';
 import { LoadTestOptions } from '../utils/ActualLoadTester';
 
@@ -24,7 +23,7 @@ export interface EngineSelectionResult {
 }
 
 export class EngineFactory {
-  private static engines = [YouTubeEngine, VimeoEngine, WebRTCEngine, HlsEngine, DashEngine, NativeEngine];
+  private static engines: Array<new (videoElement: HTMLVideoElement) => BaseEngine> = [YouTubeEngine, VimeoEngine, WebRTCEngine, HlsEngine, DashEngine, NativeEngine];
 
   /**
    * 创建视频引擎（传统方法，保持向后兼容）
@@ -93,7 +92,7 @@ export class EngineFactory {
     const detectionResults: Array<{
       engine: BaseEngine;
       result: EnhancedDetectionResult;
-      engineClass: typeof BaseEngine;
+      engineClass: new (videoElement: HTMLVideoElement) => BaseEngine;
     }> = [];
     
     for (const EngineClass of sortedEngines) {
@@ -199,8 +198,8 @@ export class EngineFactory {
    * @param engineType 引擎类型
    * @returns 引擎类或null
    */
-  private static getEngineClass(engineType: string): typeof BaseEngine | null {
-    const engineMap: Record<string, typeof BaseEngine> = {
+  private static getEngineClass(engineType: string): (new (videoElement: HTMLVideoElement) => BaseEngine) | null {
+    const engineMap: Record<string, new (videoElement: HTMLVideoElement) => BaseEngine> = {
       'youtube': YouTubeEngine,
       'vimeo': VimeoEngine,
       'webrtc': WebRTCEngine,
@@ -217,12 +216,12 @@ export class EngineFactory {
    * @param preferredEngines 优先引擎列表
    * @returns 排序后的引擎类数组
    */
-  private static sortEnginesByPreference(preferredEngines: string[]): Array<typeof BaseEngine> {
+  private static sortEnginesByPreference(preferredEngines: string[]): Array<new (videoElement: HTMLVideoElement) => BaseEngine> {
     if (preferredEngines.length === 0) {
       return this.engines;
     }
     
-    const engineMap: Record<string, typeof BaseEngine> = {
+    const engineMap: Record<string, new (videoElement: HTMLVideoElement) => BaseEngine> = {
       'youtube': YouTubeEngine,
       'vimeo': VimeoEngine,
       'webrtc': WebRTCEngine,
@@ -231,8 +230,8 @@ export class EngineFactory {
       'native': NativeEngine
     };
     
-    const preferred: Array<typeof BaseEngine> = [];
-    const remaining: Array<typeof BaseEngine> = [];
+    const preferred: Array<new (videoElement: HTMLVideoElement) => BaseEngine> = [];
+    const remaining: Array<new (videoElement: HTMLVideoElement) => BaseEngine> = [];
     
     // 添加优先引擎
     for (const engineType of preferredEngines) {
@@ -260,7 +259,7 @@ export class EngineFactory {
   private static selectBestEngine(results: Array<{
     engine: BaseEngine;
     result: EnhancedDetectionResult;
-    engineClass: typeof BaseEngine;
+    engineClass: new (videoElement: HTMLVideoElement) => BaseEngine;
   }>) {
     // 过滤出可播放的引擎
     const playableResults = results.filter(r => r.result.canPlay);

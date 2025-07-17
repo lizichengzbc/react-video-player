@@ -25,7 +25,7 @@ export interface EnhancedDetectionResult {
 
 export abstract class BaseEngine {
   protected videoElement: HTMLVideoElement;
-  protected eventListeners: Map<string, Function[]> = new Map();
+  protected eventListeners: Map<string, ((...args: any[]) => void)[]> = new Map();
 
   constructor(videoElement: HTMLVideoElement) {
     this.videoElement = videoElement;
@@ -78,7 +78,7 @@ export abstract class BaseEngine {
     let result: EnhancedDetectionResult = {
       canPlay: basicCanPlay,
       confidence: basicCanPlay ? 'medium' : 'low',
-      mimeTypeInfo,
+      mimeTypeInfo: mimeTypeInfo || undefined,
       engineType: this.getEngineType(),
       reason: 'Basic type detection'
     };
@@ -199,7 +199,7 @@ export abstract class BaseEngine {
     }
   }
 
-  protected emit<K extends keyof VideoEngineEvents>(event: K, ...args: any[]): void {
+  protected emit<K extends keyof VideoEngineEvents>(event: K, ...args: unknown[]): void {
     const listeners = this.eventListeners.get(event);
     if (listeners) {
       listeners.forEach(callback => callback(...args));
@@ -213,7 +213,7 @@ export abstract class BaseEngine {
     this.videoElement.addEventListener('play', () => this.emit('play'));
     this.videoElement.addEventListener('pause', () => this.emit('pause'));
     this.videoElement.addEventListener('ended', () => this.emit('ended'));
-    this.videoElement.addEventListener('error', (e) => this.emit('error', new Error('Video error')));
+    this.videoElement.addEventListener('error', () => this.emit('error', new Error('Video error')));
     this.videoElement.addEventListener('timeupdate', () => this.emit('timeupdate', this.videoElement.currentTime));
     this.videoElement.addEventListener('progress', () => this.emit('progress', this.videoElement.buffered));
   }

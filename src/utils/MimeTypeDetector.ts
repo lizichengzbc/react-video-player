@@ -123,8 +123,8 @@ export class MimeTypeDetector {
       }
       
       return null;
-    } catch (error) {
-      console.warn('MIME type detection failed:', error);
+    } catch {
+      console.warn('MIME type detection failed');
       return null;
     }
   }
@@ -180,7 +180,7 @@ export class MimeTypeDetector {
         container: this.getContainerFromMimeType(cleanMimeType),
         confidence: 'high'
       };
-    } catch (error) {
+    } catch {
       // 网络错误或CORS问题，静默失败
       return null;
     }

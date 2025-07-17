@@ -271,7 +271,7 @@ export class VimeoEngine extends BaseEngine {
     if (this.player) {
       try {
         this.player.destroy();
-      } catch (e) {
+      } catch {
         // 忽略可能的错误
       }
       this.player = null;

@@ -1,11 +1,6 @@
-import React, { useState } from 'react';
-import { VideoPlayer } from './components/VideoPlayer/VideoPlayer';
-import { Button, Select, Space, Typography, Card, Divider } from 'antd';
-import { PlayCircleFilled, PauseCircleFilled } from '@ant-design/icons';
+import React from 'react';
 import './App.css';
-import {BasicUsage, SocialActionsExample, ErrorHandlingExample, AdvancedEnginesExample, CustomExtensionExample} from '../examples';
-const { Title, Paragraph } = Typography;
-const { Option } = Select;
+import { SocialActionsExample } from '../examples';
 
 const App: React.FC = () => {
   return(

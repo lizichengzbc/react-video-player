@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Progress, Space, Typography } from 'antd';
+import { Button, Progress, Typography } from 'antd';
 import { ReloadOutlined, CloseOutlined, WarningOutlined } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
@@ -66,77 +66,7 @@ export const ErrorOverlay: React.FC<ErrorOverlayProps> = ({
     textShadow: '0 0 10px rgba(255, 68, 68, 0.5)'
   };
 
-  const titleStyle: React.CSSProperties = {
-    fontSize: '20px',
-    fontWeight: 'bold',
-    marginBottom: '16px',
-    color: '#ffffff'
-  };
 
-  const messageStyle: React.CSSProperties = {
-    fontSize: '15px',
-    lineHeight: '1.6',
-    marginBottom: '24px',
-    color: '#cccccc',
-    wordBreak: 'break-word'
-  };
-
-  const buttonContainerStyle: React.CSSProperties = {
-    display: 'flex',
-    gap: '16px',
-    justifyContent: 'center',
-    flexWrap: 'wrap'
-  };
-
-  const buttonStyle: React.CSSProperties = {
-    padding: '12px 24px',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '15px',
-    fontWeight: '500',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-    minWidth: '120px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px'
-  };
-
-  const retryButtonStyle: React.CSSProperties = {
-    ...buttonStyle,
-    backgroundColor: '#2563eb', // 更现代的蓝色
-    color: 'white',
-    boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
-  };
-
-  const dismissButtonStyle: React.CSSProperties = {
-    ...buttonStyle,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    color: '#cccccc',
-    border: '1px solid rgba(255, 255, 255, 0.2)'
-  };
-
-  // 处理按钮悬停效果
-  const handleRetryMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.backgroundColor = '#1d4ed8';
-    e.currentTarget.style.transform = 'translateY(-2px)';
-  };
-
-  const handleRetryMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.backgroundColor = '#2563eb';
-    e.currentTarget.style.transform = 'translateY(0)';
-  };
-
-  const handleDismissMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)';
-    e.currentTarget.style.transform = 'translateY(-2px)';
-  };
-
-  const handleDismissMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.1)';
-    e.currentTarget.style.transform = 'translateY(0)';
-  };
 
   // 获取错误类型和友好提示
   const getErrorInfo = (errorMessage: string) => {

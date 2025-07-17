@@ -76,7 +76,7 @@ export class YouTubeEngine extends BaseEngine {
       // 加载YouTube IFrame API
       const script = document.createElement('script');
       script.src = 'https://www.youtube.com/iframe_api';
-      script.onerror = (e) => reject(new Error('Failed to load YouTube API'));
+      script.onerror = () => reject(new Error('Failed to load YouTube API'));
       document.head.appendChild(script);
     });
   }
@@ -205,7 +205,7 @@ export class YouTubeEngine extends BaseEngine {
           if (this.player.getPlayerState() === (window as any).YT.PlayerState.PLAYING) {
             requestAnimationFrame(emitTimeUpdate);
           }
-        } catch (e) {
+        } catch {
           // 忽略可能的错误
         }
       }
@@ -279,7 +279,7 @@ export class YouTubeEngine extends BaseEngine {
    * 播放视频
    */
   play(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (this.player && this.playerReady) {
         this.player.playVideo();
         resolve();
@@ -337,7 +337,7 @@ export class YouTubeEngine extends BaseEngine {
     if (this.player) {
       try {
         this.player.destroy();
-      } catch (e) {
+      } catch {
         // 忽略可能的错误
       }
       this.player = null;

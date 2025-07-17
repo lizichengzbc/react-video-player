@@ -65,7 +65,7 @@ export class ActualLoadTester {
   };
 
   private static activeTests = new Set<string>();
-  private static testQueue: Array<{ src: string; resolve: Function; reject: Function }> = [];
+  private static testQueue: Array<{ src: string; resolve: (value: EnhancedLoadTestResult) => void; reject: (reason?: any) => void }> = [];
   private static readonly MAX_CONCURRENT_TESTS = 3;
 
   /**
@@ -111,7 +111,7 @@ export class ActualLoadTester {
     }
 
     // 安全检查
-    let securityCheck;
+    let securityCheck: { passed: boolean; issues: string[] } | undefined;
     if (opts.enableSecurityCheck) {
       securityCheck = await this.performSecurityCheck(src, opts);
       if (!securityCheck.passed) {
@@ -216,7 +216,7 @@ export class ActualLoadTester {
         preload: 'none'
       });
       return result.canLoad;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -302,7 +302,7 @@ export class ActualLoadTester {
         console.warn('HEAD request failed:', error);
       }
 
-    } catch (error) {
+    } catch {
       issues.push('Invalid URL format');
     }
 

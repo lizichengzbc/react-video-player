@@ -64,7 +64,7 @@ Object.defineProperty(HTMLMediaElement.prototype, 'readyState', {
 });
 
 // Mock Intersection Observer
-(global as any).IntersectionObserver = class IntersectionObserver {
+(globalThis as any).IntersectionObserver = class IntersectionObserver {
   root = null;
   rootMargin = '';
   thresholds = [];
@@ -84,7 +84,7 @@ Object.defineProperty(HTMLMediaElement.prototype, 'readyState', {
 };
 
 // Mock ResizeObserver
-(global as any).ResizeObserver = class ResizeObserver {
+(globalThis as any).ResizeObserver = class ResizeObserver {
   constructor() {}
   observe() {
     return null;
@@ -113,11 +113,11 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock URL.createObjectURL
-global.URL.createObjectURL = vi.fn().mockImplementation(() => 'mocked-url');
-global.URL.revokeObjectURL = vi.fn();
+globalThis.URL.createObjectURL = vi.fn().mockImplementation(() => 'mocked-url');
+globalThis.URL.revokeObjectURL = vi.fn();
 
 // Mock fetch for testing
-(global as any).fetch = vi.fn();
+(globalThis as any).fetch = vi.fn();
 
 // Suppress console warnings in tests
 const originalConsoleWarn = console.warn;

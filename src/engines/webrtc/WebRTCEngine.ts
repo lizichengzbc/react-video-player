@@ -1,5 +1,12 @@
 import { BaseEngine } from '../base/BaseEngine';
 
+// WebRTC 类型声明
+interface RTCIceServer {
+  urls: string | string[];
+  username?: string;
+  credential?: string;
+}
+
 /**
  * WebRTC视频引擎 - 支持WebRTC实时视频流播放
  * 使用WebRTC技术加载和控制实时视频流
