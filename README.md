@@ -191,6 +191,55 @@ function App() {
 }
 ```
 
+## 🚀 引擎选择改进
+
+### 智能引擎选择
+
+我们对引擎选择机制进行了重大改进，解决了原有方法仅依赖URL判断的局限性。新的实现采用多层检测策略，能够更准确地为各种视频源选择合适的播放引擎。
+
+#### 主要改进
+
+- **多层检测机制**：结合URL模式、文件扩展名、HTTP头信息进行检测
+- **浏览器支持验证**：检查浏览器是否真正支持检测到的格式
+- **异步检测支持**：新增 `createEngineAsync()` 方法，支持HTTP头检测
+- **缓存机制**：避免重复检测，提高性能
+- **超时控制**：防止网络检测阻塞
+- **后备机制**：多重后备策略确保总能找到可用引擎
+
+#### 使用示例
+
+```jsx
+import { EngineFactory } from '@lzc-org/react-video-player';
+
+// 同步方法 - 适用于简单场景
+const engine = EngineFactory.createEngine(videoUrl, videoElement);
+
+// 异步方法 - 推荐用于复杂场景（如无扩展名的流媒体URL）
+const engine = await EngineFactory.createEngineAsync(videoUrl, videoElement, {
+  useCache: true,              // 启用缓存
+  enableHeaderDetection: true, // 启用HTTP头检测
+  timeout: 3000               // 检测超时时间
+});
+
+// 增强检测 - 包含负载测试
+const result = await EngineFactory.selectEngine(videoUrl, videoElement, {
+  useCache: true,
+  performLoadTest: true,
+  preferredEngines: ['hls', 'dash', 'native'],
+  fallbackToNative: true
+});
+```
+
+#### 支持的检测场景
+
+- ✅ **标准视频文件**：`https://example.com/video.mp4`
+- ✅ **流媒体URL（无扩展名）**：`https://api.example.com/stream/12345`
+- ✅ **特殊平台**：YouTube、Vimeo、WebRTC
+- ✅ **复杂URL**：带查询参数、片段标识符的URL
+- ✅ **HTTP头检测**：通过Content-Type确定真实格式
+
+详细说明请参考：[引擎选择改进说明](./docs/引擎选择改进说明.md)
+
 ## 支持的引擎
 
 ### 1. 原生引擎 (NativeEngine)

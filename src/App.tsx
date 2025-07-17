@@ -1,11 +1,11 @@
 import React from "react";
 import "./App.css";
-import { BasicUsage } from "../examples";
+import { BasicUsage, ImprovedEngineSelection } from "../examples";
 
 const App: React.FC = () => {
   return (
     <>
-      <BasicUsage />
+      <ImprovedEngineSelection />
     </>
   );
 };

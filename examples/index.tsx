@@ -1,3 +1,3 @@
 import BasicUsage from "./BasicUsage";
-
-export { BasicUsage };
+import ImprovedEngineSelection from "./ImprovedEngineSelection";
+export { BasicUsage, ImprovedEngineSelection };

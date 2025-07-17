@@ -7,6 +7,7 @@ import { VimeoEngine } from './vimeo/VimeoEngine';
 import { WebRTCEngine } from './webrtc/WebRTCEngine';
 import { engineDetectionCache } from '../utils/EngineDetectionCache';
 import { LoadTestOptions } from '../utils/ActualLoadTester';
+import { MimeTypeDetector } from '../utils/MimeTypeDetector';
 
 export interface EngineSelectionOptions {
   useCache?: boolean;
@@ -24,6 +25,25 @@ export interface EngineSelectionResult {
 
 export class EngineFactory {
   private static engines: Array<new (videoElement: HTMLVideoElement) => BaseEngine> = [YouTubeEngine, VimeoEngine, WebRTCEngine, HlsEngine, DashEngine, NativeEngine];
+  
+  // 引擎类型映射表（避免重复定义）
+  private static readonly ENGINE_MAP: Record<string, new (videoElement: HTMLVideoElement) => BaseEngine> = {
+    'youtube': YouTubeEngine,
+    'vimeo': VimeoEngine,
+    'webrtc': WebRTCEngine,
+    'hls': HlsEngine,
+    'dash': DashEngine,
+    'native': NativeEngine
+  };
+  
+  // URL模式检测规则（避免重复逻辑）
+  private static readonly URL_PATTERNS = {
+    youtube: (src: string) => src.includes('youtube.com') || src.includes('youtu.be'),
+    vimeo: (src: string) => src.includes('vimeo.com'),
+    webrtc: (src: string) => src.startsWith('webrtc:') || src.includes('protocol=webrtc'),
+    hls: (src: string) => src.includes('.m3u8') || src.includes('/hls/'),
+    dash: (src: string) => src.includes('.mpd') || src.includes('/dash/')
+  };
 
   /**
    * 创建视频引擎（传统方法，保持向后兼容）
@@ -32,16 +52,50 @@ export class EngineFactory {
    * @returns 视频引擎实例
    */
   static createEngine(src: string, videoElement: HTMLVideoElement): BaseEngine {
-    // 根据URL或MIME类型选择合适的引擎
-    for (const EngineClass of this.engines) {
-      const engine = new EngineClass(videoElement);
-      if (engine.canPlayType(src)) {
-        return engine;
+    return this.selectEngineByDetection(src, videoElement, null);
+  }
+  
+  /**
+   * 异步创建视频引擎（推荐使用）
+   * 支持HTTP头检测，能更准确地处理没有文件扩展名的视频URL
+   * @param src 视频源URL
+   * @param videoElement 视频元素
+   * @param options 创建选项
+   * @returns Promise<BaseEngine>
+   */
+  static async createEngineAsync(
+    src: string, 
+    videoElement: HTMLVideoElement,
+    options: {
+      useCache?: boolean;
+      enableHeaderDetection?: boolean;
+      timeout?: number;
+    } = {}
+  ): Promise<BaseEngine> {
+    const { useCache = true, enableHeaderDetection = true, timeout = 3000 } = options;
+    
+    // 检查缓存
+    if (useCache) {
+      const cachedEngine = this.getCachedEngine(src, videoElement);
+      if (cachedEngine) {
+        return cachedEngine;
       }
     }
     
-    // 默认使用原生引擎
-    return new NativeEngine(videoElement);
+    // 异步MIME类型检测
+    let mimeTypeInfo = null;
+    if (enableHeaderDetection) {
+      mimeTypeInfo = await this.detectMimeTypeWithTimeout(src, timeout);
+    }
+    
+    const engine = this.selectEngineByDetection(src, videoElement, mimeTypeInfo);
+    
+    // 缓存成功的检测结果
+    if (useCache && mimeTypeInfo) {
+      this.cacheEngineResult(src, engine, mimeTypeInfo);
+    }
+    
+    return engine;
   }
   
   /**
@@ -64,24 +118,21 @@ export class EngineFactory {
       fallbackToNative = true
     } = options;
     
-    // 检查缓存中是否有最佳引擎
+    // 检查缓存中是否有引擎
     if (useCache) {
-      const cachedResult = this.getCachedBestEngine(src);
-      if (cachedResult) {
-        const EngineClass = this.getEngineClass(cachedResult.engineType);
-        if (EngineClass) {
-          const engine = new EngineClass(videoElement);
-          return {
-            engine,
-            detectionResult: {
-              canPlay: cachedResult.canPlay,
-              confidence: cachedResult.confidence,
-              engineType: cachedResult.engineType,
-              reason: 'From cache'
-            },
-            engineType: cachedResult.engineType
-          };
-        }
+      const cachedEngine = this.getCachedEngine(src, videoElement);
+      if (cachedEngine) {
+        const cachedResult = engineDetectionCache.get(src)!;
+        return {
+          engine: cachedEngine,
+          detectionResult: {
+            canPlay: cachedResult.canPlay,
+            confidence: cachedResult.confidence,
+            engineType: cachedResult.engineType,
+            reason: 'From cache'
+          },
+          engineType: cachedResult.engineType
+        };
       }
     }
     
@@ -153,28 +204,95 @@ export class EngineFactory {
     throw new Error('No suitable engine found for the video source');
   }
   
+
+  
   /**
-   * 快速引擎选择（仅基础检测）
+   * 从缓存中获取引擎实例
    * @param src 视频源URL
    * @param videoElement 视频元素
-   * @returns Promise<BaseEngine>
+   * @returns 缓存的引擎实例或null
    */
-  static async quickSelectEngine(src: string, videoElement: HTMLVideoElement): Promise<BaseEngine> {
-    // 检查缓存
-    const cachedResult = this.getCachedBestEngine(src);
-    if (cachedResult) {
-      const EngineClass = this.getEngineClass(cachedResult.engineType);
-      if (EngineClass) {
-        return new EngineClass(videoElement);
+  private static getCachedEngine(src: string, videoElement: HTMLVideoElement): BaseEngine | null {
+    const cached = engineDetectionCache.get(src);
+    if (cached && cached.canPlay) {
+      const EngineClass = this.getEngineClass(cached.engineType);
+      return EngineClass ? new EngineClass(videoElement) : null;
+    }
+    return null;
+  }
+  
+  /**
+   * 异步检测MIME类型（带超时控制）
+   * @param src 视频源URL
+   * @param timeout 超时时间（毫秒）
+   * @returns MIME类型信息或null
+   */
+  private static async detectMimeTypeWithTimeout(src: string, timeout: number) {
+    try {
+      const detectPromise = MimeTypeDetector.detect(src);
+      const timeoutPromise = new Promise<null>((_, reject) => 
+        setTimeout(() => reject(new Error('Detection timeout')), timeout)
+      );
+      
+      return await Promise.race([detectPromise, timeoutPromise]);
+    } catch (error) {
+      console.warn('MIME type detection failed, falling back to URL-based detection:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * 缓存引擎检测结果
+   * @param src 视频源URL
+   * @param engine 引擎实例
+   * @param mimeTypeInfo MIME类型信息
+   */
+  private static cacheEngineResult(src: string, engine: BaseEngine, mimeTypeInfo: any) {
+    engineDetectionCache.set(src, {
+      engineType: engine.getEngineType(),
+      canPlay: true,
+      confidence: mimeTypeInfo?.confidence || 'medium',
+      mimeType: mimeTypeInfo?.mimeType || this.detectVideoType(src),
+      timestamp: Date.now()
+    });
+  }
+  
+  /**
+   * 统一的引擎选择逻辑
+   * @param src 视频源URL
+   * @param videoElement 视频元素
+   * @param mimeTypeInfo MIME类型信息（可选）
+   * @returns 选择的引擎实例
+   */
+  private static selectEngineByDetection(
+    src: string, 
+    videoElement: HTMLVideoElement, 
+    mimeTypeInfo: any
+  ): BaseEngine {
+    // 首先进行URL模式匹配
+    const urlBasedEngine = this.getEngineByUrlPattern(src, videoElement);
+    if (urlBasedEngine) {
+      return urlBasedEngine;
+    }
+    
+    // 确定MIME类型
+    const detectedType = mimeTypeInfo?.mimeType || this.detectVideoType(src);
+    
+    // 根据检测到的类型选择引擎
+    for (const EngineClass of this.engines) {
+      const engine = new EngineClass(videoElement);
+      
+      if (engine.canPlayType(detectedType)) {
+        if (this.validateBrowserSupport(detectedType, videoElement)) {
+          return engine;
+        }
       }
     }
     
-    // 快速检测
+    // 后备方案：尝试原始URL检测
     for (const EngineClass of this.engines) {
       const engine = new EngineClass(videoElement);
-      const canPlay = await engine.quickDetection(src);
-      
-      if (canPlay) {
+      if (engine.canPlayType(src)) {
         return engine;
       }
     }
@@ -184,31 +302,12 @@ export class EngineFactory {
   }
   
   /**
-   * 从缓存中获取最佳引擎
-   * @param src 视频源URL
-   * @returns 缓存的检测结果或null
-   */
-  private static getCachedBestEngine(src: string) {
-    const cached = engineDetectionCache.get(src);
-    return cached && cached.canPlay ? cached : null;
-  }
-  
-  /**
    * 根据引擎类型获取引擎类
    * @param engineType 引擎类型
    * @returns 引擎类或null
    */
   private static getEngineClass(engineType: string): (new (videoElement: HTMLVideoElement) => BaseEngine) | null {
-    const engineMap: Record<string, new (videoElement: HTMLVideoElement) => BaseEngine> = {
-      'youtube': YouTubeEngine,
-      'vimeo': VimeoEngine,
-      'webrtc': WebRTCEngine,
-      'hls': HlsEngine,
-      'dash': DashEngine,
-      'native': NativeEngine
-    };
-    
-    return engineMap[engineType] || null;
+    return this.ENGINE_MAP[engineType] || null;
   }
   
   /**
@@ -221,32 +320,11 @@ export class EngineFactory {
       return this.engines;
     }
     
-    const engineMap: Record<string, new (videoElement: HTMLVideoElement) => BaseEngine> = {
-      'youtube': YouTubeEngine,
-      'vimeo': VimeoEngine,
-      'webrtc': WebRTCEngine,
-      'hls': HlsEngine,
-      'dash': DashEngine,
-      'native': NativeEngine
-    };
+    const preferred = preferredEngines
+      .map(engineType => this.ENGINE_MAP[engineType])
+      .filter(Boolean);
     
-    const preferred: Array<new (videoElement: HTMLVideoElement) => BaseEngine> = [];
-    const remaining: Array<new (videoElement: HTMLVideoElement) => BaseEngine> = [];
-    
-    // 添加优先引擎
-    for (const engineType of preferredEngines) {
-      const EngineClass = engineMap[engineType];
-      if (EngineClass) {
-        preferred.push(EngineClass);
-      }
-    }
-    
-    // 添加剩余引擎
-    for (const EngineClass of this.engines) {
-      if (!preferred.includes(EngineClass)) {
-        remaining.push(EngineClass);
-      }
-    }
+    const remaining = this.engines.filter(engine => !preferred.includes(engine));
     
     return [...preferred, ...remaining];
   }
@@ -289,14 +367,87 @@ export class EngineFactory {
     return playableResults[0];
   }
 
+  /**
+   * 根据URL模式快速匹配特定平台的引擎
+   * @param src 视频源URL
+   * @param videoElement 视频元素
+   * @returns 匹配的引擎实例或null
+   */
+  private static getEngineByUrlPattern(src: string, videoElement: HTMLVideoElement): BaseEngine | null {
+    for (const [engineType, pattern] of Object.entries(this.URL_PATTERNS)) {
+      if (pattern(src)) {
+        const EngineClass = this.ENGINE_MAP[engineType];
+        return EngineClass ? new EngineClass(videoElement) : null;
+      }
+    }
+    return null;
+  }
+  
+  /**
+   * 验证浏览器对特定MIME类型的支持
+   * @param mimeType MIME类型
+   * @param videoElement 视频元素
+   * @returns 是否支持
+   */
+  private static validateBrowserSupport(mimeType: string, videoElement: HTMLVideoElement): boolean {
+    try {
+      const support = videoElement.canPlayType(mimeType);
+      return support === 'probably' || support === 'maybe';
+    } catch {
+      return false;
+    }
+  }
+  
+  // MIME类型映射表
+  private static readonly MIME_TYPE_MAP: Record<string, string> = {
+    youtube: 'video/youtube',
+    vimeo: 'video/vimeo',
+    webrtc: 'application/webrtc',
+    hls: 'application/vnd.apple.mpegurl',
+    dash: 'application/dash+xml'
+  };
+  
+  // 文件扩展名映射表
+  private static readonly EXTENSION_MAP: Record<string, string> = {
+    'm3u8': 'application/vnd.apple.mpegurl',
+    'mpd': 'application/dash+xml',
+    'mp4': 'video/mp4',
+    'm4v': 'video/mp4',
+    'webm': 'video/webm',
+    'ogv': 'video/ogg',
+    'ogg': 'video/ogg',
+    'avi': 'video/x-msvideo',
+    'mov': 'video/quicktime',
+    'wmv': 'video/x-ms-wmv',
+    'flv': 'video/x-flv'
+  };
+
+  /**
+   * 检测视频类型
+   * @param src 视频源URL
+   * @returns 检测到的MIME类型
+   */
   static detectVideoType(src: string): string {
-    if (src.includes('youtube.com') || src.includes('youtu.be')) return 'youtube';
-    if (src.includes('vimeo.com')) return 'vimeo';
-    if (src.startsWith('webrtc:') || src.includes('protocol=webrtc')) return 'application/webrtc';
-    if (src.includes('.m3u8')) return 'application/vnd.apple.mpegurl';
-    if (src.includes('.mpd')) return 'application/dash+xml';
-    if (src.includes('.mp4')) return 'video/mp4';
-    if (src.includes('.webm')) return 'video/webm';
-    return 'video/mp4'; // 默认
+    // 特殊平台URL检测
+    for (const [engineType, pattern] of Object.entries(this.URL_PATTERNS)) {
+      if (pattern(src)) {
+        return this.MIME_TYPE_MAP[engineType] || 'video/mp4';
+      }
+    }
+    
+    // 文件扩展名检测
+    const cleanUrl = src.split('?')[0].split('#')[0];
+    const extension = cleanUrl.split('.').pop()?.toLowerCase();
+    
+    if (extension && this.EXTENSION_MAP[extension]) {
+      return this.EXTENSION_MAP[extension];
+    }
+    
+    // 流媒体URL模式检测
+    if (src.includes('stream') && src.includes('mp4')) return 'video/mp4';
+    if (src.includes('stream') && src.includes('webm')) return 'video/webm';
+    
+    // 默认返回MP4
+    return 'video/mp4';
   }
 }
