@@ -11,6 +11,10 @@ export class VimeoEngine extends BaseEngine {
   private playerReady: boolean = false;
   private pendingActions: {type: string, value?: any}[] = [];
   
+  getEngineType(): string {
+    return 'vimeo';
+  }
+  
   /**
    * 检查是否可以播放Vimeo视频
    * @param type 视频类型或URL

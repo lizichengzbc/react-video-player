@@ -1,6 +1,10 @@
 import { BaseEngine } from '../base/BaseEngine';
 
 export class NativeEngine extends BaseEngine {
+  getEngineType(): string {
+    return 'native';
+  }
+
   canPlayType(type: string): boolean {
     return this.videoElement.canPlayType(type) !== '';
   }

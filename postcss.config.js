@@ -1,6 +1,4 @@
-import type { Config } from 'postcss-load-config';
-
-const config: Config = {
+const config = {
   plugins: {
     // 自动添加浏览器前缀
     autoprefixer: {

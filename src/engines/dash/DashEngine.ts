@@ -6,6 +6,10 @@ export class DashEngine extends BaseEngine {
   private player: any | null = null;
   private dashjs: any = null;
 
+  getEngineType(): string {
+    return 'dash';
+  }
+
   canPlayType(type: string): boolean {
     return type.includes('mpd') || type.includes('application/dash+xml');
   }

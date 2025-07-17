@@ -5,14 +5,16 @@ export interface VideoSource {
 }
 
 export interface VideoPlayerState {
+  isLoading: boolean;
+  error: string | null;
+  retryCount: number;
   isPlaying: boolean;
   currentTime: number;
   duration: number;
   volume: number;
-  muted: boolean;
-  buffered: TimeRanges | null;
-  error: string | null;
-  isLoading: boolean;
+  isMuted: boolean;
+  isFullscreen: boolean;
+  buffered?: TimeRanges | null;
 }
 
 export interface VideoPlayerConfig {
@@ -22,4 +24,15 @@ export interface VideoPlayerConfig {
   controls?: boolean;
   preload?: 'none' | 'metadata' | 'auto';
   crossOrigin?: 'anonymous' | 'use-credentials';
+}
+
+export interface VideoPlayerControls {
+  play: () => void;
+  pause: () => void;
+  seek: (time: number) => void;
+  setVolume: (volume: number) => void;
+  toggleMute: () => void;
+  toggleFullscreen: () => void;
+  reload: () => void;
+  retry: () => void;
 }

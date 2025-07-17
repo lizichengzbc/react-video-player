@@ -3,6 +3,8 @@ import { BaseEngine } from '../../engines/base/BaseEngine';
 import { EngineFactory } from '../../engines/EngineFactory';
 import { ErrorOverlay } from './ErrorOverlay';
 import { VideoControls } from '../Controls/VideoControls';
+import { Button } from 'antd';
+import { ReloadOutlined, WarningOutlined } from '@ant-design/icons';
 import { 
   SocialActions, 
   SocialActionsCallbacks, 
@@ -10,10 +12,9 @@ import {
   SocialActionsConfig, 
   SocialActionsCustomUI 
 } from '../Controls/SocialActions';
-// 导入 Ant Design 组件
-import { Button, Progress, Tooltip } from 'antd';
-import { ReloadOutlined, CloseOutlined, WarningOutlined } from '@ant-design/icons';
+import { VideoPlayerState, VideoPlayerControls } from '../../types';
 
+// 视频播放器属性接口
 export interface VideoPlayerProps {
   src: string;
   poster?: string;
@@ -29,20 +30,9 @@ export interface VideoPlayerProps {
   onEnded?: () => void;
   onError?: (error: Error) => void;
   onTimeUpdate?: (currentTime: number) => void;
-  onRetry?: () => void; // 重试回调
-  showErrorOverlay?: boolean; // 是否显示错误覆盖层
-  maxRetries?: number; // 最大重试次数配置
-  
-  // 社交功能配置
-  socialActions?: {
-    show?: boolean; // 是否显示社交功能
-    state?: SocialActionsState; // 社交功能状态
-    callbacks?: SocialActionsCallbacks; // 社交功能回调
-    config?: SocialActionsConfig; // 社交功能配置
-    customUI?: SocialActionsCustomUI; // 自定义UI
-  };
-  
-  // 自定义UI配置
+  onRetry?: () => void;
+  showErrorOverlay?: boolean;
+  maxRetries?: number;
   customUI?: {
     retryButton?: React.ReactNode;
     dismissButton?: React.ReactNode;
@@ -51,13 +41,24 @@ export interface VideoPlayerProps {
     loadingIndicator?: React.ReactNode;
     buttonPosition?: 'left' | 'center' | 'right';
     theme?: 'light' | 'dark';
-    // 新增控件相关配置
     playButton?: React.ReactNode;
     pauseButton?: React.ReactNode;
     volumeButton?: React.ReactNode;
     fullscreenButton?: React.ReactNode;
   };
+  // 社交功能配置
+  socialActions?: {
+    show?: boolean;
+    state?: SocialActionsState;
+    callbacks?: SocialActionsCallbacks;
+    config?: SocialActionsConfig;
+    customUI?: SocialActionsCustomUI;
+  };
+  // 新增：允许在视频容器内渲染额外内容
+  children?: React.ReactNode;
 }
+
+// 类型定义已移至 src/types/index.ts
 
 export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   src,
@@ -76,31 +77,38 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   onTimeUpdate,
   onRetry,
   showErrorOverlay = true,
-  maxRetries = 3, // 默认值为3，现在可以从外部配置
+  maxRetries = 3,
+  customUI,
   socialActions,
-  customUI
+  children
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const engineRef = useRef<BaseEngine | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [retryCount, setRetryCount] = useState(0);
   
-  // 新增播放器状态
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(muted ? 0 : 1);
-  const [isMuted, setIsMuted] = useState(muted);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  
+  // 播放器状态
+  const [state, setState] = useState<VideoPlayerState>({
+    isLoading: false,
+    error: null,
+    retryCount: 0,
+    isPlaying: false,
+    currentTime: 0,
+    duration: 0,
+    volume: muted ? 0 : 1,
+    isMuted: muted,
+    isFullscreen: false
+  });
+
+  // 状态更新辅助函数
+  const updateState = useCallback((updates: Partial<VideoPlayerState>) => {
+    setState(prev => ({ ...prev, ...updates }));
+  }, []);
+
   // 初始化引擎
   const initializeEngine = useCallback(async () => {
     if (!videoRef.current || !src) return;
 
-    setIsLoading(true);
-    setError(null);
+    updateState({ isLoading: true, error: null });
 
     try {
       // 销毁旧引擎
@@ -115,152 +123,154 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       // 绑定事件
       engine.on('error', (error: Error) => {
         console.error('Video playback error:', error);
-        setError(error.message);
-        setIsLoading(false);
-        setIsPlaying(false);
+        updateState({ 
+          error: error.message, 
+          isLoading: false, 
+          isPlaying: false 
+        });
         onError?.(error);
       });
 
       engine.on('play', () => {
-        setError(null); // 播放成功时清除错误
-        setIsPlaying(true);
+        updateState({ error: null, isPlaying: true });
         onPlay?.();
       });
       
       engine.on('pause', () => {
-        setIsPlaying(false);
+        updateState({ isPlaying: false });
         onPause?.();
       });
       
       engine.on('ended', () => {
-        setIsPlaying(false);
+        updateState({ isPlaying: false });
         onEnded?.();
       });
       
       engine.on('timeupdate', (time: number) => {
-        setCurrentTime(time);
+        updateState({ currentTime: time });
         onTimeUpdate?.(time);
       });
       
       engine.on('loadedmetadata', () => {
         if (videoRef.current) {
-          setDuration(videoRef.current.duration);
+          updateState({ duration: videoRef.current.duration });
         }
       });
       
       engine.on('canplay', () => {
-        setIsLoading(false);
-        setRetryCount(0); // 重置重试计数
+        updateState({ isLoading: false, retryCount: 0 });
         if (autoplay) {
           engine.play().catch((playError) => {
             console.error('Auto-play failed:', playError);
-            // 自动播放失败通常不是严重错误，不显示错误界面
           });
         }
       });
 
       engine.on('loadstart', () => {
-        setIsLoading(true);
-        setError(null);
+        updateState({ isLoading: true, error: null });
       });
 
       // 加载视频
       await engine.load(src);
     } catch (error) {
       console.error('Engine initialization error:', error);
-      setError((error as Error).message);
-      setIsLoading(false);
-      setIsPlaying(false);
+      updateState({ 
+        error: (error as Error).message, 
+        isLoading: false, 
+        isPlaying: false 
+      });
     }
-  }, [src, autoplay, onPlay, onPause, onEnded, onError, onTimeUpdate]);
+  }, [src, autoplay, onPlay, onPause, onEnded, onError, onTimeUpdate, updateState]);
 
-  // 重试功能
-  const handleRetry = useCallback(() => {
-    if (retryCount < maxRetries) {
-      setRetryCount(prev => prev + 1);
-      setError(null);
-      onRetry?.(); // 调用外部重试回调
-      initializeEngine();
-    } else {
-      setError(`重试次数已达上限(${maxRetries}次)，请稍后再试`);
-    }
-  }, [retryCount, maxRetries, onRetry, initializeEngine]);
+  // 播放器控制方法
+  const controls_methods: VideoPlayerControls = {
+    play: useCallback(() => {
+      if (engineRef.current && !state.isPlaying) {
+        engineRef.current.play().catch(error => {
+          console.error('Play failed:', error);
+        });
+      }
+    }, [state.isPlaying]),
+
+    pause: useCallback(() => {
+      if (engineRef.current && state.isPlaying) {
+        engineRef.current.pause();
+      }
+    }, [state.isPlaying]),
+
+    seek: useCallback((time: number) => {
+      if (videoRef.current) {
+        videoRef.current.currentTime = time;
+      }
+    }, []),
+
+    setVolume: useCallback((newVolume: number) => {
+      if (engineRef.current) {
+        engineRef.current.setVolume(newVolume);
+        updateState({ 
+          volume: newVolume, 
+          isMuted: newVolume === 0 
+        });
+      }
+    }, [updateState]),
+
+    toggleMute: useCallback(() => {
+      if (engineRef.current && videoRef.current) {
+        const newMuted = !state.isMuted;
+        videoRef.current.muted = newMuted;
+        updateState({ isMuted: newMuted });
+      }
+    }, [state.isMuted, updateState]),
+
+    toggleFullscreen: useCallback(() => {
+      if (!containerRef.current) return;
+      
+      if (!document.fullscreenElement) {
+        containerRef.current.requestFullscreen().then(() => {
+          updateState({ isFullscreen: true });
+        }).catch(err => {
+          console.error('全屏模式错误:', err);
+        });
+      } else {
+        document.exitFullscreen().then(() => {
+          updateState({ isFullscreen: false });
+        }).catch(err => {
+          console.error('退出全屏模式错误:', err);
+        });
+      }
+    }, [updateState]),
+
+    reload: useCallback(() => {
+      if (videoRef.current) {
+        const currentTime = videoRef.current.currentTime;
+        initializeEngine().then(() => {
+          if (videoRef.current) {
+            videoRef.current.currentTime = currentTime;
+          }
+        });
+      }
+    }, [initializeEngine]),
+
+    retry: useCallback(() => {
+      if (state.retryCount < maxRetries) {
+        updateState({ 
+          retryCount: state.retryCount + 1, 
+          error: null 
+        });
+        onRetry?.();
+        initializeEngine();
+      } else {
+        updateState({ 
+          error: `重试次数已达上限(${maxRetries}次)，请稍后再试` 
+        });
+      }
+    }, [state.retryCount, maxRetries, onRetry, initializeEngine, updateState])
+  };
 
   // 关闭错误提示
   const handleDismissError = useCallback(() => {
-    setError(null);
-  }, []);
-
-  // 播放/暂停控制
-  const handlePlay = useCallback(() => {
-    if (engineRef.current && !isPlaying) {
-      engineRef.current.play().catch(error => {
-        console.error('Play failed:', error);
-      });
-    }
-  }, [isPlaying]);
-
-  const handlePause = useCallback(() => {
-    if (engineRef.current && isPlaying) {
-      engineRef.current.pause();
-    }
-  }, [isPlaying]);
-
-  // 跳转控制
-  const handleSeek = useCallback((time: number) => {
-    if (videoRef.current) {
-      videoRef.current.currentTime = time;
-    }
-  }, []);
-
-  // 音量控制
-  const handleVolumeChange = useCallback((newVolume: number) => {
-    if (engineRef.current) {
-      engineRef.current.setVolume(newVolume);
-      setVolume(newVolume);
-      setIsMuted(newVolume === 0);
-    }
-  }, []);
-
-  // 静音切换
-  const handleMuteToggle = useCallback(() => {
-    if (engineRef.current && videoRef.current) {
-      const newMuted = !isMuted;
-      videoRef.current.muted = newMuted;
-      setIsMuted(newMuted);
-    }
-  }, [isMuted]);
-
-  // 全屏控制
-  const handleFullscreenToggle = useCallback(() => {
-    if (!containerRef.current) return;
-    
-    if (!document.fullscreenElement) {
-      containerRef.current.requestFullscreen().then(() => {
-        setIsFullscreen(true);
-      }).catch(err => {
-        console.error('全屏模式错误:', err);
-      });
-    } else {
-      document.exitFullscreen().then(() => {
-        setIsFullscreen(false);
-      }).catch(err => {
-        console.error('退出全屏模式错误:', err);
-      });
-    }
-  }, []);
-
-  // 重新加载
-  const handleReload = useCallback(() => {
-    if (videoRef.current) {
-      const currentTime = videoRef.current.currentTime;
-      initializeEngine().then(() => {
-        if (videoRef.current) {
-          videoRef.current.currentTime = currentTime;
-        }
-      });
-    }
-  }, [initializeEngine]);
+    updateState({ error: null });
+  }, [updateState]);
 
   useEffect(() => {
     initializeEngine();
@@ -272,32 +282,32 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     };
   }, [initializeEngine]);
 
-  // 当src改变时重置重试计数
+  // 当src改变时重置状态
   useEffect(() => {
-    setRetryCount(0);
-    setError(null);
-  }, [src]);
+    updateState({ retryCount: 0, error: null });
+  }, [src, updateState]);
 
   // 监听全屏变化
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      updateState({ isFullscreen: !!document.fullscreenElement });
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
     };
-  }, []);
+  }, [updateState]);
 
+  // 样式定义
   const containerStyle: React.CSSProperties = {
     position: 'relative',
     width,
     height,
     backgroundColor: '#000',
-    overflow: 'hidden', // 防止内容溢出
-    borderRadius: '8px', // 添加圆角
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)' // 添加阴影效果
+    overflow: 'hidden',
+    borderRadius: '8px',
+    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
   };
 
   const videoStyle: React.CSSProperties = {
@@ -319,7 +329,6 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
     zIndex: 999
   };
   
-  // 添加播放状态信息显示
   const statusStyle: React.CSSProperties = {
     position: 'absolute',
     top: '10px',
@@ -336,39 +345,44 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   return (
-    <div ref={containerRef} style={containerStyle} className={className} role="application">
+    <div 
+      ref={containerRef} 
+      style={containerStyle} 
+      className={className} 
+      role="application"
+    >
       <video
         ref={videoRef}
         poster={poster}
-        muted={isMuted}
+        muted={state.isMuted}
         loop={loop}
-        controls={false} // 禁用原生控件，使用自定义控件
+        controls={false}
         style={videoStyle}
         playsInline
         webkit-playsinline="true"
       />
       
       {/* 自定义控件 */}
-      {controls && !error && !isLoading && (
+      {controls && !state.error && !state.isLoading && (
         <VideoControls
-          isPlaying={isPlaying}
-          currentTime={currentTime}
-          duration={duration}
-          volume={volume}
-          muted={isMuted}
-          onPlay={handlePlay}
-          onPause={handlePause}
-          onSeek={handleSeek}
-          onVolumeChange={handleVolumeChange}
-          onMuteToggle={handleMuteToggle}
-          onFullscreenToggle={handleFullscreenToggle}
-          onReload={handleReload}
+          isPlaying={state.isPlaying}
+          currentTime={state.currentTime}
+          duration={state.duration}
+          volume={state.volume}
+          muted={state.isMuted}
+          onPlay={controls_methods.play}
+          onPause={controls_methods.pause}
+          onSeek={controls_methods.seek}
+          onVolumeChange={controls_methods.setVolume}
+          onMuteToggle={controls_methods.toggleMute}
+          onFullscreenToggle={controls_methods.toggleFullscreen}
+          onReload={controls_methods.reload}
           customUI={customUI}
         />
       )}
       
       {/* 社交功能组件 */}
-      {socialActions?.show && !error && !isLoading && (
+      {socialActions?.show && !state.error && !state.isLoading && (
         <SocialActions
           state={socialActions.state}
           callbacks={socialActions.callbacks}
@@ -377,8 +391,8 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
         />
       )}
       
-      {/* 加载状态 - 改进加载动画 */}
-      {isLoading && !error && (
+      {/* 加载状态 */}
+      {state.isLoading && !state.error && (
         <div style={loadingStyle}>
           {customUI?.loadingIndicator || (
             <>
@@ -404,27 +418,27 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
       )}
       
       {/* 重试状态信息 */}
-      {retryCount > 0 && !error && (
+      {state.retryCount > 0 && !state.error && (
         <div style={statusStyle}>
           <span>🔄</span>
-          <span>已重试 {retryCount}/{maxRetries} 次</span>
+          <span>已重试 {state.retryCount}/{maxRetries} 次</span>
         </div>
       )}
       
       {/* 错误状态 */}
-      {error && showErrorOverlay && (
+      {state.error && showErrorOverlay && (
         <ErrorOverlay
-          error={error}
-          onRetry={handleRetry}
+          error={state.error}
+          onRetry={controls_methods.retry}
           onDismiss={handleDismissError}
-          retryCount={retryCount}
+          retryCount={state.retryCount}
           maxRetries={maxRetries}
           customUI={customUI}
         />
       )}
       
-      {/* 简单错误提示（当不显示覆盖层时） */}
-      {error && !showErrorOverlay && (
+      {/* 简单错误提示 */}
+      {state.error && !showErrorOverlay && (
         <div style={{
           position: 'absolute',
           bottom: '10px',
@@ -442,21 +456,27 @@ export const VideoPlayer: React.FC<VideoPlayerProps> = ({
           boxShadow: '0 2px 8px rgba(255, 0, 0, 0.3)'
         }}>
           {customUI?.errorIcon || <WarningOutlined style={{ fontSize: '18px' }} />}
-          <span>{error}</span>
+          <span>{state.error}</span>
           <Button 
             type="text"
             icon={<ReloadOutlined />}
-            onClick={handleRetry}
+            onClick={controls_methods.retry}
             style={{
               marginLeft: 'auto',
               color: 'white',
             }}
-            disabled={retryCount >= maxRetries}
+            disabled={state.retryCount >= maxRetries}
           >
-            重试 ({retryCount}/{maxRetries})
+            重试 ({state.retryCount}/{maxRetries})
           </Button>
         </div>
       )}
+      
+      {/* 允许渲染额外的子组件 */}
+      {children}
     </div>
   );
 };
+
+// 导出状态和控制接口供其他组件使用
+// export type { VideoPlayerState, VideoPlayerControls };

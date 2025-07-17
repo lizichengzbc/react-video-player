@@ -1,5 +1,5 @@
 import React from 'react';
-import { BaseVideoPlayer } from '../src/components/VideoPlayer/BaseVideoPlayer';
+import { VideoPlayer } from '../src/components/VideoPlayer/VideoPlayer';
 import { Button } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
 
@@ -11,7 +11,7 @@ const CustomExtensionExample: React.FC = () => {
   return (
     <div style={{ padding: '20px' }}>
       <h2>自定义扩展示例</h2>
-      <BaseVideoPlayer
+      <VideoPlayer
         src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
         width={800}
         height={450}
@@ -35,7 +35,7 @@ const CustomExtensionExample: React.FC = () => {
             下载
           </Button>
         </div>
-      </BaseVideoPlayer>
+      </VideoPlayer>
     </div>
   );
 };

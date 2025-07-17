@@ -54,8 +54,7 @@
 - 自定义回调：完全由用户实现业务逻辑
 
 ### 🏗️ 架构设计
-- **BaseVideoPlayer**: 核心播放功能，轻量级（~50KB gzipped）
-- **SocialVideoPlayer**: 在基础播放器上添加社交功能（+10KB）
+- **VideoPlayer**: 统一的视频播放器组件，支持所有功能（~60KB gzipped）
 - **VideoPlayer**: 保持向后兼容的完整功能组件
 - **完整TypeScript支持**: 类型安全，智能提示
 - **组件化设计**: 易于扩展和维护
@@ -92,11 +91,11 @@ pnpm add @lzc-org/react-video-player
 ### 基础播放器
 
 ```jsx
-import { BaseVideoPlayer } from '@lzc-org/react-video-player';
+import { VideoPlayer } from '@lzc-org/react-video-player';
 
 function App() {
   return (
-    <BaseVideoPlayer
+    <VideoPlayer
       src="https://example.com/video.mp4"
       width="100%"
       height="400px"
@@ -111,19 +110,19 @@ function App() {
 ### 带社交功能的播放器
 
 ```jsx
-import { SocialVideoPlayer } from '@lzc-org/react-video-player';
+import { VideoPlayer } from '@lzc-org/react-video-player';
 import { useState } from 'react';
 
 function App() {
   const [socialState, setSocialState] = useState({
     isLiked: false,
     isFavorited: false,
-    likeCount: 128,
-    favoriteCount: 45
+    likeCount: 42,
+    favoriteCount: 15
   });
 
   return (
-    <SocialVideoPlayer
+    <VideoPlayer
       src="https://example.com/video.mp4"
       width="100%"
       height="400px"
@@ -257,7 +256,7 @@ function App() {
 ### 自定义扩展
 
 ```jsx
-import { BaseVideoPlayer } from '@lzc-org/react-video-player';
+import { VideoPlayer } from '@lzc-org/react-video-player';
 import { Button } from 'antd';
 import { DownloadOutlined } from '@ant-design/icons';
 
@@ -267,12 +266,14 @@ function CustomPlayer() {
   };
 
   return (
-    <BaseVideoPlayer
+    <VideoPlayer
       src="https://example.com/video.mp4"
       width={800}
       height={450}
+      controls={true}
+      autoplay={false}
     >
-      {/* 在基础播放器中添加自定义功能 */}
+      {/* 在播放器中添加自定义功能 */}
       <div style={{
         position: 'absolute',
         top: '16px',
@@ -287,7 +288,7 @@ function CustomPlayer() {
           下载
         </Button>
       </div>
-    </BaseVideoPlayer>
+    </VideoPlayer>
   );
 }
 ```
@@ -343,7 +344,7 @@ function CustomPlayer() {
 
 ## API参考
 
-### BaseVideoPlayer Props
+### VideoPlayer Props
 
 | 属性             | 类型            | 默认值 | 描述                   |
 | ---------------- | --------------- | ------ | ---------------------- |
@@ -367,9 +368,9 @@ function CustomPlayer() {
 | onTimeUpdate     | function        | -      | 时间更新回调           |
 | onRetry          | function        | -      | 重试回调               |
 
-### SocialVideoPlayer Props
+### 社交功能配置
 
-继承BaseVideoPlayer的所有属性，并添加：
+通过 `socialActions` 属性配置：
 
 | 属性               | 类型   | 默认值 | 描述         |
 | ------------------ | ------ | ------ | ------------ |
@@ -417,8 +418,7 @@ interface SocialActionsConfig {
 
 ```
 VideoPlayer (完整功能，向后兼容)
-├── SocialVideoPlayer (社交功能增强)
-│   ├── BaseVideoPlayer (核心播放功能)
+├── VideoPlayer (统一播放器组件)
 │   │   ├── VideoControls (播放控件)
 │   │   ├── ErrorOverlay (错误处理)
 │   │   └── children (自定义扩展)
@@ -428,9 +428,9 @@ VideoPlayer (完整功能，向后兼容)
 
 ### 使用建议
 
-- **轻量级应用**: 使用 `BaseVideoPlayer`
-- **需要社交功能**: 使用 `SocialVideoPlayer`
-- **自定义扩展**: 基于 `BaseVideoPlayer` + `children`
+- **基础播放**: 使用 `VideoPlayer` 的基础功能
+- **社交功能**: 通过 `socialActions` 属性启用
+- **自定义扩展**: 使用 `children` 属性添加自定义内容
 - **向后兼容**: 继续使用 `VideoPlayer`
 
 ## 浏览器兼容性
@@ -451,7 +451,7 @@ VideoPlayer (完整功能，向后兼容)
 
 ## 性能优化
 
-- 使用 `BaseVideoPlayer` 可以减少不必要的功能加载
+- 按需启用功能可以减少不必要的资源加载
 - 社交功能按需加载，不影响核心播放性能
 - 支持懒加载和代码分割
 - 优化的状态管理，减少不必要的重渲染

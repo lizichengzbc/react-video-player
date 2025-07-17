@@ -3,6 +3,8 @@ import SocialActionsExample from './SocialActionsExample';
 import ErrorHandlingExample from './ErrorHandlingExample';
 import AdvancedEnginesExample from './AdvancedEnginesExample';
 import CustomExtensionExample from './CustomExtensionExample';
+import EnhancedDetectionExample from './EnhancedDetectionExample';
+import LoadTestingIssuesDemo from './LoadTestingIssuesDemo';
 
 
 export {
@@ -10,5 +12,7 @@ export {
     SocialActionsExample,
     ErrorHandlingExample,
     AdvancedEnginesExample,
-    CustomExtensionExample
+    CustomExtensionExample,
+    EnhancedDetectionExample,
+    LoadTestingIssuesDemo
 }

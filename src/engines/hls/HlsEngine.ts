@@ -4,6 +4,10 @@ import { BaseEngine } from '../base/BaseEngine';
 export class HlsEngine extends BaseEngine {
   private hls: Hls | null = null;
 
+  getEngineType(): string {
+    return 'hls';
+  }
+
   canPlayType(type: string): boolean {
     return type.includes('m3u8') || type.includes('application/vnd.apple.mpegurl');
   }

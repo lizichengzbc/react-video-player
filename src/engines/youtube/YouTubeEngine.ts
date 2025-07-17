@@ -11,6 +11,10 @@ export class YouTubeEngine extends BaseEngine {
   private playerReady: boolean = false;
   private pendingActions: {type: string, value?: any}[] = [];
   
+  getEngineType(): string {
+    return 'youtube';
+  }
+  
   /**
    * 检查是否可以播放YouTube视频
    * @param type 视频类型或URL
